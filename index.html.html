@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Gestión de Inventario - Tienda Comercial</title>
+  <style>
+    :root {
+      --bg-primary: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #2c3e50;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --success: #16a34a;
+      --border: #e2e8f0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 24px;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: #1e293b;
+    }
+
+    header p {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    /* Paneles de métricas */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .metric-card h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .metric-card .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    /* Layout principal */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .panel h2 {
+      font-size: 1.2rem;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--bg-primary);
+    }
+
+    /* Formulario */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* Tablas */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-ok { background: #dcfce7; color: var(--success); }
+    .badge-low { background: #fef3c7; color: var(--warning); }
+    .badge-out { background: #fee2e2; color: var(--danger); }
+
+    .btn-action {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .btn-sell { background-color: #e0f2fe; color: #0284c7; margin-right: 4px; }
+    .btn-delete { background-color: #fee2e2; color: var(--danger); }
+
+    /* Alertas */
+    .alert-box {
+      margin-bottom: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+      font-size: 0.9rem;
+    }
+
+    .alert-box.active { display: block; }
+    .alert-danger { background: #fee2e2; border: 1px solid #fca5a5; color: var(--danger); }
+    .alert-success { background: #dcfce7; border: 1px solid #86efac; color: var(--success); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Control de Inventario y Ventas</h1>
+      <p>Gestión de existencias, precios e indicadores de venta en tiempo real</p>
+    </header>
+
+    <!-- Caja de alertas dinámicas -->
+    <div id="alertContainer" class="alert-box"></div>
+
+    <!-- Panel Superior: Métricas -->
+    <section class="dashboard">
+      <div class="metric-card">
+        <h3>Total de Productos</h3>
+        <div class="value" id="metricTotalProducts">0</div>
+      </div>
+      <div class="metric-card">
+        <h3>Valor del Inventario</h3>
+        <div class="value" id="metricTotalValue">$0.00</div>
+      </div>
+      <div class="metric-card">
+        <h3>Alertas de Stock Bajo</h3>
+        <div class="value" id="metricLowStock" style="color: var(--warning);">0</div>
+      </div>
+      <div class="metric-card">
+        <h3>Ventas Realizadas</h3>
+        <div class="value" id="metricTotalSales">$0.00</div>
+      </div>
+    </section>
+
+    <!-- Panel Principal: Registro y Tabla -->
+    <div class="main-grid">
+      <!-- Formulario de Registro -->
+      <aside class="panel">
+        <h2>Registrar Artículo</h2>
+        <form id="productForm">
+          <div class="form-group">
+            <label for="productName">Nombre del Producto</label>
+            <input type="text" id="productName" placeholder="Ej. Perfume Inspirado 100ml" required>
+          </div>
+          <div class="form-group">
+            <label for="productCategory">Categoría</label>
+            <select id="productCategory" required>
+              <option value="">Seleccionar...</option>
+              <option value="Perfumería">Perfumería</option>
+              <option value="Accesorios">Accesorios</option>
+              <option value="Cuidado Personal">Cuidado Personal</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="productPrice">Precio de Venta ($)</label>
+            <input type="number" id="productPrice" step="0.01" min="0.01" placeholder="20000" required>
+          </div>
+          <div class="form-group">
+            <label for="productStock">Cantidad Inicial</label>
+            <input type="number" id="productStock" min="0" placeholder="10" required>
+          </div>
+          <div class="form-group">
+            <label for="productMinStock">Stock Mínimo (Alerta)</label>
+            <input type="number" id="productMinStock" min="1" value="3" required>
+          </div>
+          <button type="submit" class="btn">Guardar Producto</button>
+        </form>
+      </aside>
+
+      <!-- Tabla de Productos -->
+      <main class="panel">
+        <h2>Artículos en Inventario</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Código / Fecha</th>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <!-- Filas generadas dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // ESTADO DE LA APLICACIÓN (Variables globales)
+    let inventory = [];
+    let totalSalesAccumulator = 0;
+
+    // REFERENCIAS AL DOM
+    const productForm = document.getElementById('productForm');
+    const inventoryTableBody = document.getElementById('inventoryTableBody');
+    const alertContainer = document.getElementById('alertContainer');
+
+    // Elementos de Métricas
+    const metricTotalProducts = document.getElementById('metricTotalProducts');
+    const metricTotalValue = document.getElementById('metricTotalValue');
+    const metricLowStock = document.getElementById('metricLowStock');
+    const metricTotalSales = document.getElementById('metricTotalSales');
+
+    // EVENTO: Registro de nuevo producto
+    productForm.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      // Estructuras de ASIGNACIÓN: Captura de valores
+      const name = document.getElementById('productName').value;
+      const category = document.getElementById('productCategory').value;
+      const price = parseFloat(document.getElementById('productPrice').value);
+      const stock = parseInt(document.getElementById('productStock').value);
+      const minStock = parseInt(document.getElementById('productMinStock').value);
+      
+      const creationDate = new Date().toLocaleDateString('es-CO');
+      const id = 'PROD-' + Math.floor(1000 + Math.random() * 9000);
+
+      // Objeto de producto
+      const newProduct = {
+        id: id,
+        name: name,
+        category: category,
+        price: price,
+        stock: stock,
+        minStock: minStock,
+        date: creationDate
+      };
+
+      // Asignación/Inserción en arreglo
+      inventory.push(newProduct);
+
+      // Limpiar formulario y reajustar interfaz
+      productForm.reset();
+      showAlert('Producto registrado correctamente.', 'success');
+      renderApp();
+    });
+
+    // FUNCIÓN: Registrar venta de un artículo
+    function sellProduct(productId) {
+      // Estructura de REPETICIÓN (Búsqueda manual de elemento)
+      let found = false;
+      for (let i = 0; i < inventory.length; i++) {
+        if (inventory[i].id === productId) {
+          found = true;
+          
+          // Estructura CONDICIONAL: Verificar disponibilidad
+          if (inventory[i].stock > 0) {
+            inventory[i].stock -= 1; // Asignación compuesta (Restar stock)
+            
+            // Cálculo con Impuesto (IVA 19%) para actualizar acumulador
+            const taxAmount = inventory[i].price * 0.19;
+            const finalPrice = inventory[i].price + taxAmount;
+            
+            totalSalesAccumulator += finalPrice; // Asignación acumulativa
+            showAlert(`Venta registrada para "${inventory[i].name}". Total con IVA (19%): $${finalPrice.toFixed(2)}`, 'success');
+          } else {
+            showAlert(`No hay suficiente stock para vender "${inventory[i].name}".`, 'danger');
+          }
+          break; // Salir del bucle tras encontrar el registro
+        }
+      }
+      renderApp();
+    }
+
+    // FUNCIÓN: Eliminar producto
+    function deleteProduct(productId) {
+      const updatedInventory = [];
+      
+      // Estructura de REPETICIÓN: Filtrado manual sin métodos complejos
+      for (let i = 0; i < inventory.length; i++) {
+        if (inventory[i].id !== productId) {
+          updatedInventory.push(inventory[i]);
+        }
+      }
+      
+      inventory = updatedInventory; // Reasignación del arreglo
+      showAlert('Artículo eliminado del inventario.', 'danger');
+      renderApp();
+    }
+
+    // FUNCIÓN PRINCIPAL DE RENDERIZADO
+    function renderApp() {
+      // 1. Limpiar tabla previa
+      inventoryTableBody.innerHTML = '';
+
+      // Variables para cálculos
+      let totalItemsCount = 0;
+      let totalInventoryValue = 0;
+      let lowStockAlertsCount = 0;
+
+      // 2. Estructura de REPETICIÓN: Procesamiento e inserción en DOM
+      for (let i = 0; i < inventory.length; i++) {
+        const item = inventory[i];
+
+        // Cálculos acumulativos (Asignación)
+        totalItemsCount += item.stock;
+        totalInventoryValue += (item.price * item.stock);
+
+        // Estructuras CONDICIONALES: Definir estado del stock
+        let statusBadge = '';
+        if (item.stock === 0) {
+          statusBadge = '<span class="badge badge-out">Agotado</span>';
+          lowStockAlertsCount++;
+        } else if (item.stock <= item.minStock) {
+          statusBadge = '<span class="badge badge-low">Stock Bajo</span>';
+          lowStockAlertsCount++;
+        } else {
+          statusBadge = '<span class="badge badge-ok">Disponible</span>';
+        }
+
+        // Creación manual de fila HTML
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><strong>${item.id}</strong><br><small style="color:#64748b">${item.date}</small></td>
+          <td>${item.name}</td>
+          <td>${item.category}</td>
+          <td>$${item.price.toFixed(2)}</td>
+          <td>${item.stock} u.</td>
+          <td>${statusBadge}</td>
+          <td>
+            <button class="btn-action btn-sell" onclick="sellProduct('${item.id}')">Vender</button>
+            <button class="btn-action btn-delete" onclick="deleteProduct('${item.id}')">Eliminar</button>
+          </td>
+        `;
+
+        inventoryTableBody.appendChild(row);
+      }
+
+      // 3. Actualización de Indicadores/Métricas en DOM (Asignación final)
+      metricTotalProducts.textContent = inventory.length;
+      metricTotalValue.textContent = `$${totalInventoryValue.toLocaleString('es-CO', { minimumFractionDigits: 2 })}`;
+      metricLowStock.textContent = lowStockAlertsCount;
+      metricTotalSales.textContent = `$${totalSalesAccumulator.toLocaleString('es-CO', { minimumFractionDigits: 2 })}`;
+    }
+
+    // FUNCIÓN AUXILIAR: Mostrar Alertas
+    function showAlert(message, type) {
+      alertContainer.textContent = message;
+      alertContainer.className = `alert-box active alert-${type}`;
+
+      // Estructura CONDICIONAL temporal para ocultar
+      setTimeout(function() {
+        alertContainer.className = 'alert-box';
+      }, 4000);
+    }
+
+    // Inicialización al cargar la página
+    renderApp();
+  </script>
+</body>
+</html>

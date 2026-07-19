@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+S<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -355,13 +355,9 @@
           if (inventory[i].stock > 0) {
             inventory[i].stock -= 1; // Asignación compuesta (Restar stock)
             
-            // Cálculo con Impuesto (IVA 19%) para actualizar acumulador
-            const taxAmount = inventory[i].price * 0.19;
-            const finalPrice = inventory[i].price + taxAmount;
-            
-            totalSalesAccumulator += finalPrice; // Asignación acumulativa
-            showAlert(`Venta registrada para "${inventory[i].name}". Total con IVA (19%): $${finalPrice.toFixed(2)}`, 'success');
-          } else {
+            // Sumar el precio exacto directamente al acumulador
+            totalSalesAccumulator += inventory[i].price; // Asignación acumulativa
+            showAlert(`Venta registrada para "${inventory[i].name}". Total: $${inventory[i].price.toFixed(2)}`, 'success');
             showAlert(`No hay suficiente stock para vender "${inventory[i].name}".`, 'danger');
           }
           break; // Salir del bucle tras encontrar el registro
